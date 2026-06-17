@@ -16,6 +16,10 @@ object LegacyHuaweiSignatureCompat {
     private var verifyApkHashUnhook: HookHandle? = null
 
     fun hook(lpparam: LoadParam) {
+        if (lpparam.packageName == "com.ss.android.ugc.aweme") {
+            XLog.d(TAG, "skip legacy huawei signature hook for ${lpparam.packageName}")
+            return
+        }
         XLog.d(TAG, "hook() called with: processName = ${lpparam.processName}")
 
         tryHookVerifyApkHash(lpparam.classLoader)
