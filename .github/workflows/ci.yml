@@ -4,6 +4,7 @@ permissions:
   security-events: read
 
 on:
+  workflow_dispatch: # 🎯 强力推荐：加上这一行，你就可以在网页上随时手动点击按钮，无条件开始编译打包了！
   pull_request:
   push:
     branches:
