@@ -36,6 +36,12 @@ object ModuleCredentialResolver {
     )
 
     fun resolve(context: Context, packageName: String): ModuleCredential? {
+        if (packageName == "com.ss.android.ugc.aweme") {
+            return ModuleCredential(
+                appId = "2882303761517509924",
+                appKey = "5571750917924"
+            )
+        }
         ModuleCompatRegistry.credentialOverride(packageName)?.let { return it }
         val packageInfo = try {
             context.packageManager.getPackageInfo(
