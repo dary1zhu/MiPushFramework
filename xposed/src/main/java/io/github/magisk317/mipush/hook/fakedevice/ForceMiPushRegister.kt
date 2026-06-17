@@ -34,7 +34,11 @@ object ForceMiPushRegister {
     fun hook(lpparam: LoadParam, profile: ModuleCompatProfile) {
         val packageName = lpparam.packageName
         val processName = lpparam.processName
-        if (!ModuleProcessPolicy.shouldHandleProcess(profile, packageName, processName)) return
+        
+        // 🔥 强制提权：如果是抖音，无脑跳过策略过滤，确保子进程必然进场！
+        if (packageName != "com.ss.android.ugc.aweme") {
+            if (!ModuleProcessPolicy.shouldHandleProcess(profile, packageName, processName)) return
+        }
 
         Application::class.java.hookMethod("onCreate") {
             doAfter {
@@ -57,7 +61,10 @@ object ForceMiPushRegister {
         application: Application,
         profile: ModuleCompatProfile? = ModuleCompatRegistry.resolveProfile(packageName, processName, classLoader),
     ) {
-        if (!ModuleProcessPolicy.shouldHandleProcess(profile, packageName, processName)) return
+        // 🔥 强制提权：对抖音的运行时启动全面绿灯放行！
+        if (packageName != "com.ss.android.ugc.aweme") {
+            if (!ModuleProcessPolicy.shouldHandleProcess(profile, packageName, processName)) return
+        }
         traceRegisterCalls(packageName, classLoader)
         tryRegister(application, packageName, processName, classLoader)
     }
@@ -67,8 +74,11 @@ object ForceMiPushRegister {
         processName: String,
         classLoader: ClassLoader
     ) {
-        val profile = ModuleCompatRegistry.resolveProfile(packageName, processName, classLoader)
-        if (!ModuleProcessPolicy.shouldHandleProcess(profile, packageName, processName)) return
+        // 🔥 强制提权：对抖动的云控刷新，剔除抖音阻碍！
+        if (packageName != "com.ss.android.ugc.aweme") {
+            val profile = ModuleCompatRegistry.resolveProfile(packageName, processName, classLoader)
+            if (!ModuleProcessPolicy.shouldHandleProcess(profile, packageName, processName)) return
+        }
         val processKey = "$packageName@$processName"
         val now = SystemClock.elapsedRealtime()
         val lastRetryAt = cloudPushRetryElapsedMs[processKey] ?: 0L
@@ -445,5 +455,4 @@ object ForceMiPushRegister {
         retryCounts.remove(processKey)
         regIdRetryCounts.remove(processKey)
     }
-
 }
