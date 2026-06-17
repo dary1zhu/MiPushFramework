@@ -78,7 +78,21 @@ private val VENDOR_CLEAR_PROPS = setOf(
 fun fakeProperty(property: Property, overrideValue: String) = fakeProperty(Pair(property.key, overrideValue))
 
 fun fakeAllBuildInProperties() {
-    val isXiaomi = DeviceDetector.isXiaomiDevice()
+    // ====================================================================
+    // 🔥 降维打击：通过动态抓取包名，如果是抖音，无脑将 isXiaomi 焊死为 false！
+    // 强制所有子进程（尤其是 :push）100% 吃满红米 picasso 全套大厂属性！
+    // ====================================================================
+    val currentPkg = runCatching {
+        val activityThread = Class.forName("android.app.ActivityThread")
+        activityThread.getMethod("currentPackageName").invoke(null) as String
+    }.getOrDefault("")
+
+    var isXiaomi = DeviceDetector.isXiaomiDevice()
+    if (currentPkg == "com.ss.android.ugc.aweme") {
+        isXiaomi = false
+    }
+    // ====================================================================
+
     XLog.d(TAG, "Device detection: isXiaomi=$isXiaomi, brand=${Build.BRAND}, manufacturer=${Build.MANUFACTURER}")
 
     val baseProps = LinkedHashMap<String, String>()
@@ -107,10 +121,6 @@ fun fakeAllBuildInProperties() {
             "(base=${baseProps.size}, template=${MiPushResetpropTemplate.defaultCustomProps().size}, autoMiPush=${!isXiaomi})"
     )
     fakePropertiesSafely(propsToFake)
-}
-
-fun fakeProperty(vararg properties: Property) {
-    fakeProperty(*properties.map { it.entry }.toTypedArray())
 }
 
 private val propertyMap: MutableMap<String, String> = HashMap()
