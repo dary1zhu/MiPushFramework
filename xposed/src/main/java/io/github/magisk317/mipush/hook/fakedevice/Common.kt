@@ -43,6 +43,9 @@ open class Common : IFakeDevice {
             isMIUI = true
         } catch (_: Throwable) {
         }
+        if (lpparam.packageName == "com.ss.android.ugc.aweme") {
+            isMIUI = false 
+        }
         if (isMIUI) {
             return
         }
