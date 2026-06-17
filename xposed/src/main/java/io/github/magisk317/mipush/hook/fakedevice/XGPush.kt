@@ -396,25 +396,32 @@ open class XGPush : IFakeDevice {
         return args.joinToString(prefix = "[", postfix = "]") { safeValue(it) }
     }
 
-    private fun safeValue(value: Any?): String {
+    // 🎯 完美对齐：确保工具方法为 internal，防止交叉编译隔离报错
+    internal fun safeValue(value: Any?): String {
         if (value == null) return "null"
-        val raw = value.toString()
-        val sanitized = raw
-            .replace(Regex("""(?i)(token|regid|reg_id|account|aid|accessid|access_id)=([^,}\]\s]+)""")) {
-                "${it.groupValues[1]}=${redactMiddle(it.groupValues[2])}"
-            }
-            .replace("\n", " ")
-            .replace("\r", " ")
-        val compact = if (sanitized.length > 240) sanitized.take(240) + "..." else sanitized
-        return if (shouldRedactWholeValue(value, compact)) redactMiddle(compact) else compact
+        
+        return runCatching {
+            val raw = value.toString()
+            val sanitized = raw
+                .replace(Regex("""(?i)(token|regid|reg_id|account|aid|accessid|access_id)=([^,}\]\s]+)""")) {
+                    "${it.groupValues[1]}=${redactMiddle(it.groupValues[2])}"
+                }
+                .replace("\n", " ")
+                .replace("\r", " ")
+            if (sanitized.length > 240) sanitized.take(240) + "..." else sanitized
+        }.getOrElse { 
+            "${value.javaClass.name}@${System.identityHashCode(value)}" 
+        }
     }
 
-    private fun redactMiddle(value: String): String {
+    // 🎯 完美对齐：确保工具方法为 internal
+    internal fun redactMiddle(value: String): String {
         if (value.length <= 8) return "<redacted>"
         return value.take(4) + "..." + value.takeLast(4)
     }
 
-    private fun shouldRedactWholeValue(value: Any, text: String): Boolean {
+    // 🎯 完美对齐：确保工具方法为 internal
+    internal fun shouldRedactWholeValue(value: Any, text: String): Boolean {
         if (value !is CharSequence) return false
         return text.length >= 16 && text.none { it.isWhitespace() }
     }
@@ -478,6 +485,4 @@ open class XGPush : IFakeDevice {
             return if (token.length <= 8) "<redacted>" else token.take(4) + "..." + token.takeLast(4)
         }
     }
-
-
 }
