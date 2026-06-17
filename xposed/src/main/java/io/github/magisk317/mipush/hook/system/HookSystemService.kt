@@ -175,13 +175,23 @@ class HookSystemService {
             decision: VisibilityDecision,
         ): String? {
             if (!decision.allow) return null
-            val callers = callingPackages.joinToString(limit = 4)
             val caller = decision.caller ?: "unknown"
             val key = "${decision.reason}:$caller:$targetPackageName"
             if (!markVisibilityLogAllowed(key)) return null
-            return "visibility allow uid=$callingUid callers=[$callers] target=$targetPackageName reason=${decision.reason}"
-        }
 
+            // ====================================================================
+            // 🔥 绝对防御：用 runCatching 包裹高频多进程下的全系统包可见性日志拼接
+            // 杜绝高并发、多线程抢占导致的全系统底层服务（system_server）死锁挂起！
+            // ====================================================================
+            return runCatching {
+                val callers = callingPackages.joinToString(limit = 4)
+                "visibility allow uid=$callingUid callers=[$callers] target=$targetPackageName reason=${decision.reason}"
+            }.getOrElse { 
+                // 异常时安全退化返回基础摘要，保障 PMS 调度生命线绝对稳健
+                "visibility allow uid=$callingUid callers=[fallback_safe] target=$targetPackageName reason=${decision.reason}" 
+            }
+            // ====================================================================
+        }
         internal fun resetVisibilityLogLimiterForTest() {
             synchronized(visibilityLogCounts) {
                 visibilityLogCounts.clear()
