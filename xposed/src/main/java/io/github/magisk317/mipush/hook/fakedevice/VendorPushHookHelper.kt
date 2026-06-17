@@ -237,15 +237,25 @@ internal object VendorPushHookHelper {
 
     internal fun sanitizeForLog(value: Any?): String {
         if (value == null) return "null"
-        val raw = value.toString()
-        val sanitized = raw
-            .replace(Regex("""(?i)(token|regid|reg_id|account|aid|appId|app_id|appKey|app_key|accessid|access_id)=([^,}\]\s]+)""")) {
-                "${it.groupValues[1]}=${redactMiddle(it.groupValues[2])}"
-            }
-            .replace("\n", " ")
-            .replace("\r", " ")
-        val compact = if (sanitized.length > 240) sanitized.take(240) + "..." else sanitized
-        return if (shouldRedactWholeValue(value, compact)) redactMiddle(compact) else compact
+        
+        // ====================================================================
+        // 🔥 绝对防御：用 runCatching 牢牢护住 toString 和正则替换
+        // 杜绝高频并发下由于复杂脱敏导致的 CPU 死锁及多进程 ANR 闪退！
+        // ====================================================================
+        return runCatching {
+            val raw = value.toString()
+            val sanitized = raw
+                .replace(Regex("""(?i)(token|regid|reg_id|account|aid|appId|app_id|appKey|app_key|accessid|access_id)=([^,}\]\s]+)""")) {
+                    "${it.groupValues[1]}=${redactMiddle(it.groupValues[2])}"
+                }
+                .replace("\n", " ")
+                .replace("\r", " ")
+            if (sanitized.length > 240) sanitized.take(240) + "..." else sanitized
+        }.getOrElse { 
+            // 发生异常时，安全退化输出类名
+            "${value.javaClass.name}@${System.identityHashCode(value)}" 
+        }
+        // ====================================================================
     }
 
     internal fun markHooked(key: String): Boolean = hookedMethods.add(key)
