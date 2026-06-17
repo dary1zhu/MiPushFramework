@@ -211,6 +211,7 @@
       "packageName": "com.ss.android.ugc.aweme",
       "hookPipelines": [
         "DOUYIN",
+        "FAKE_MIUI_ONLY",
         "ALI_AGOO_ACCS",
         "UMENG_PUSH",
         "MIPUSH_COMPONENT_VISIBILITY",
