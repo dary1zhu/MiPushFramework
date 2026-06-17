@@ -596,44 +596,28 @@ class MiPushComponentVisibility : IFakeDevice {
 
     private fun ensureOwnMiPushComponents(packageInfo: PackageInfo, context: VisibilityContext) {
         val services = buildList {
-            if (context.hasClass(PUSH_MESSAGE_HANDLER)) {
-                add(serviceInfo(context.packageName, PUSH_MESSAGE_HANDLER, exported = true))
-            }
-            if (context.hasClass(MESSAGE_HANDLE_SERVICE)) {
-                add(serviceInfo(context.packageName, MESSAGE_HANDLE_SERVICE, exported = false))
-            }
-            if (context.hasClass(XMSF_SERVICE)) {
-                add(serviceInfo(context.packageName, XMSF_SERVICE, exported = false))
-            }
-            if (context.hasClass(XMSF_JOB_SERVICE)) {
-                add(
-                    serviceInfo(
-                        context.packageName,
-                        XMSF_JOB_SERVICE,
-                        exported = false,
-                        permission = "android.permission.BIND_JOB_SERVICE"
-                    )
+            // ❌ 删掉原本的 if (context.hasClass(...)) 弱检查
+            // 🎯 直接无条件硬注入
+            add(serviceInfo(context.packageName, PUSH_MESSAGE_HANDLER, exported = true))
+            add(serviceInfo(context.packageName, MESSAGE_HANDLE_SERVICE, exported = false))
+            add(serviceInfo(context.packageName, XMSF_SERVICE, exported = false))
+            add(
+                serviceInfo(
+                    context.packageName,
+                    XMSF_JOB_SERVICE,
+                    exported = false,
+                    permission = "android.permission.BIND_JOB_SERVICE"
                 )
-            }
+            )
         }
         val receivers = buildList {
-            if (context.hasClass(PUSH_SERVICE_RECEIVER)) {
-                add(activityInfo(context.packageName, PUSH_SERVICE_RECEIVER, exported = true))
-            }
-            if (context.hasClass(PING_RECEIVER)) {
-                add(activityInfo(context.packageName, PING_RECEIVER, exported = false))
-            }
-            if (context.hasClass(MIPUSH_MESSAGE_RECEIVER)) {
-                add(activityInfo(context.packageName, MIPUSH_MESSAGE_RECEIVER, exported = true))
-            }
+            add(activityInfo(context.packageName, PUSH_SERVICE_RECEIVER, exported = true))
+            add(activityInfo(context.packageName, PING_RECEIVER, exported = false))
+            add(activityInfo(context.packageName, MIPUSH_MESSAGE_RECEIVER, exported = true))
         }
         val activities = buildList {
-            if (context.hasClass(MIPUSH_BRIDGE_ACTIVITY)) {
-                add(activityInfo(context.packageName, MIPUSH_BRIDGE_ACTIVITY, exported = true))
-            }
-            if (context.hasClass(MIPUSH_NOTIFICATION_CLICKED_ACTIVITY)) {
-                add(activityInfo(context.packageName, MIPUSH_NOTIFICATION_CLICKED_ACTIVITY, exported = true))
-            }
+            add(activityInfo(context.packageName, MIPUSH_BRIDGE_ACTIVITY, exported = true))
+            add(activityInfo(context.packageName, MIPUSH_NOTIFICATION_CLICKED_ACTIVITY, exported = true))
         }
         packageInfo.services = mergeServices(packageInfo.services, services)
         packageInfo.receivers = mergeActivities(packageInfo.receivers, receivers)
@@ -645,10 +629,12 @@ class MiPushComponentVisibility : IFakeDevice {
 
     private fun fakeReceiverResolveInfos(intent: Intent, context: VisibilityContext): List<ResolveInfo> {
         val action = intent.action
+        // ❌ 抛弃原本的 firstExistingClass 动态探查
+        // 🎯 根据 Action 直接写死宿主预期的核心响应类
         val className = when (action) {
-            MIPUSH_RECEIVE_ACTION -> firstExistingClass(context, PUSH_SERVICE_RECEIVER, MIPUSH_MESSAGE_RECEIVER)
-            MIPUSH_MIUI_RECEIVE_ACTION -> firstExistingClass(context, MIPUSH_MESSAGE_RECEIVER, PUSH_SERVICE_RECEIVER)
-            MIPUSH_PING_ACTION -> firstExistingClass(context, PING_RECEIVER)
+            MIPUSH_RECEIVE_ACTION -> PUSH_SERVICE_RECEIVER
+            MIPUSH_MIUI_RECEIVE_ACTION -> MIPUSH_MESSAGE_RECEIVER
+            MIPUSH_PING_ACTION -> PING_RECEIVER
             else -> null
         } ?: return emptyList()
         return listOf(
@@ -675,15 +661,14 @@ class MiPushComponentVisibility : IFakeDevice {
             }
             targetPackage == context.packageName || targetPackage == null -> {
                 if (intent.action != MIPUSH_MIUI_CLICK_ACTION) return emptyList()
-                val className = firstExistingClass(context, PUSH_MESSAGE_HANDLER, MESSAGE_HANDLE_SERVICE)
-                    ?: return emptyList()
-                serviceInfo(context.packageName, className, exported = true)
+                // 🎯 同样干掉类探测，直接指定默认 Handler 处理
+                serviceInfo(context.packageName, PUSH_MESSAGE_HANDLER, exported = true)
             }
             else -> null
         } ?: return emptyList()
         return listOf(ResolveInfo().apply { this.serviceInfo = serviceInfo })
     }
-
+    
     private fun fakeActivityResolveInfos(intent: Intent, context: VisibilityContext): List<ResolveInfo> {
         val targetPackage = intent.targetPackage()
         val activityInfo = when {
