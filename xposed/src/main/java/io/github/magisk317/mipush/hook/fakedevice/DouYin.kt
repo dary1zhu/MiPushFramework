@@ -19,6 +19,7 @@ class DouYin : Common() {
     }
 
     override fun fake(lpparam: LoadParam): Boolean {
+        // 🔥 最高原则：首先彻底让主进程和所有核心子进程无条件吃满 Common 小米血统存根！
         super.fake(lpparam)
         
         // Hook isMIUI detection - critical for DouYin to initialize MiPush SDK
@@ -49,7 +50,15 @@ class DouYin : Common() {
             fakeProperty("ro.flyme.version.id" to "")
         }
 
-        //public java.lang.String com.bytedance.common.network.DefaultNetWorkClient.post(java.lang.String,java.util.List,java.util.Map,com.bytedance.common.utility.NetworkClient$ReqContext)
+        // ====================================================================
+        // 🔥 守护进程放行桥梁：如果是后台守护进程，不需要网络流篡改，直接返回 true 安全过关！
+        // ====================================================================
+        if (lpparam.processName.endsWith(":push")) {
+            XLog.d(TAG, "✓ Tailored push process optimization active for ${lpparam.processName}")
+            return true
+        }
+        // ====================================================================
+
         XLog.d(TAG, "Searching for AppLogNetworkClient class...")
         val classAppLogNetworkClient = try {
             val clazz = lpparam.classLoader.findClass("com.ss.android.ugc.aweme.statistic.AppLogNetworkClient")
@@ -65,9 +74,11 @@ class DouYin : Common() {
                 null
             }
         }
+        
+        // 🧱 绝杀熔断死锁：就算统计类找不到，基础改机已完成，必须返回 true，绝不能 return false 葬送全部伪装！
         if (classAppLogNetworkClient == null) {
-            XLog.d(TAG, "Aborting DouYin hook: AppLogNetworkClient is null")
-            return false
+            XLog.d(TAG, "AppLogNetworkClient missing, bypass network interception, return true")
+            return true
         }
 
         XLog.d(TAG, "Searching for ReqContext class...")
@@ -80,8 +91,8 @@ class DouYin : Common() {
             null
         }
         if (classReqContext == null) {
-            XLog.d(TAG, "Aborting DouYin hook: ReqContext is null")
-            return false
+            XLog.d(TAG, "ReqContext missing, bypass network interception, return true")
+            return true
         }
         
         XLog.d(TAG, "Hooking cloudpush methods on AppLogNetworkClient...")
