@@ -105,9 +105,12 @@ class KeepAliveHook {
         try {
             val oomAdjusterClass = findHookClass("com.android.server.am.OomAdjuster", classLoader)
             var targetMethodName: String? = null
+            
+            // 🎯 增强型泛化探查，完美通杀 Android 14 到 Android 17 的内核方法重构
             for (method in oomAdjusterClass.declaredMethods) {
-                if (method.name == "computeOomAdjLSP" || method.name == "computeOomAdjLocked") {
-                    targetMethodName = method.name
+                val name = method.name
+                if (name.contains("computeOomAdj") || name.contains("updateOomAdj")) {
+                    targetMethodName = name
                     break
                 }
             }
@@ -191,6 +194,7 @@ class KeepAliveHook {
             java.lang.Float.TYPE -> 0f
             java.lang.Double.TYPE -> 0.0
             java.lang.Character.TYPE -> 0.toChar()
+            java.lang.Void.TYPE -> null // 🎯 显式对齐 void 类型返回
             else -> null
         }
     }
