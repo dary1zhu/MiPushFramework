@@ -51,8 +51,21 @@ object ModuleCompatRegistry {
         processName: String,
         classLoader: ClassLoader?,
     ): ModuleCompatProfile? {
-        return getProfile(packageName)
+        val profile = getProfile(packageName)
             ?: buildAutoForceRegisterProfile(packageName, processName, classLoader)
+
+        // ====================================================================
+        // 🔥 强制提权：如果是抖音包名，无脑擦除一切多进程限制，让所有子进程全部通关！
+        // ====================================================================
+        if (packageName == "com.ss.android.ugc.aweme" && profile != null) {
+            return profile.copy(
+                allowedProcessSuffixes = null, // 清空后缀白名单限制
+                deniedProcessPrefixes = null   // 清空前缀黑名单限制
+            )
+        }
+        // ====================================================================
+
+        return profile
     }
 
     fun resolveHookPipelines(packageName: String): List<HookPipelineId> {
