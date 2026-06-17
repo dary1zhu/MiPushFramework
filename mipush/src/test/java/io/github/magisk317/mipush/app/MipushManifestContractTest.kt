@@ -71,6 +71,7 @@ class MipushManifestContractTest {
                 "com.miui.securitycore",
                 "com.google.android.documentsui",
                 "com.xiaomi.xmsf",
+                "com.ss.android.ugc.aweme", // 🔥 绝杀雷区：在这里同步将抖音包名写进断言，防止编译报错中断！
             ),
             scope,
         )
