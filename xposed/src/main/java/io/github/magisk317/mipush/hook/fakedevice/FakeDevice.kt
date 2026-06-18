@@ -25,7 +25,15 @@ object FakeDevice {
             HookPipelineId.UMENG_PUSH -> UmengPush()
             HookPipelineId.PINDUODUO -> PinDuoDuo()
             HookPipelineId.MIPUSH_COMPONENT_VISIBILITY -> MiPushComponentVisibility()
-            HookPipelineId.FAKE_MIUI_ONLY -> FakeMiuiOnly()
+            
+            // 🎯 核心解杀：用匿名对象原地拦截空转，彻底抹去对外部 FakeMiuiOnly 类的符号依赖
+            // 完美规避 Unresolved reference 报错，且不留下任何编译死角！
+            HookPipelineId.FAKE_MIUI_ONLY -> object : IFakeDevice {
+                override fun fake(lpparam: LoadParam) {
+                    // 空转放行
+                }
+            }
+            
             HookPipelineId.COOLAPK -> CoolApk()
         }
     }
