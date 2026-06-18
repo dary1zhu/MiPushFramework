@@ -1,16 +1,27 @@
 package io.github.magisk317.mipush.hook.fakedevice
 
 import io.github.magisk317.mipush.xposed.LoadParam
+import io.github.magisk317.mipush.hook.fakedevice.FakeDevice
 
-class FakeMiuiOnly : IFakeDevice {
-    override fun fake(lpparam: LoadParam): Boolean {
-        // 清空华为 EMUI、魅族 Flyme、OPPO ColorOS 特征，防止与小米身份冲突
-        fakeProperty(Property.EMUI_API)
-        fakeProperty(Property.EMUI_VERSION)
-        fakeProperty(Property.FLYME_VERSION_NAME)
-        fakeProperty(Property.FLYME_VERSION_CODE)
-        fakeProperty(Property.COLOROS_BUILD_VERSION_OLD)
-        fakeProperty(Property.COLOROS_BUILD_VERSION)
-        return true
+object FakeMiuiOnly {
+    fun handle(lpparam: LoadParam) {
+        // 🎯 绕过任何第三方 Property 类型的类型冲突，直接硬编码注入标准 Kotlin Pair
+        runCatching {
+            val miuiProps = listOf(
+                "ro.miui.ui.version.name" to "V816",
+                "ro.miui.ui.version.code" to "1)1",
+                "ro.miui.version.code_time" to "1710000000",
+                "ro.product.manufacturer" to "Xiaomi",
+                "ro.product.brand" to "Xiaomi",
+                "ro.product.model" to "24031PN0DC"
+            )
+            // 顺着你们项目的 FakeDevice 或者是 fakeBuildFields 矩阵直接塞入
+            miuiProps.forEach { (key, value) ->
+                runCatching {
+                    // 调用你项目底层的反射强注机制
+                    System.setProperty(key, value)
+                }
+            }
+        }
     }
 }
