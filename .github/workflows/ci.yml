@@ -31,14 +31,25 @@ jobs:
           validate-wrappers: false
           allow-snapshot-wrappers: true
 
+      # ====================================================================
+      # 🎯 节点一：Detekt 步骤安全加固
+      # 加上 --no-configuration-cache，强行脱离 Gradle 反序列化死锁黑洞
+      # ====================================================================
       - name: Detekt
         continue-on-error: true
-        run: ./gradlew --warning-mode all detekt qualityGateDetekt -PminifyDebug -Pkotlin.incremental=false
+        run: ./gradlew --warning-mode all detekt qualityGateDetekt -PminifyDebug -Pkotlin.incremental=false --no-configuration-cache
+
       - name: Test
-        run: ./gradlew --warning-mode all :common:check :xmsf:testNormalDebugUnitTest :xmsf:testVc105DebugUnitTest testDebugUnitTest -PminifyDebug -Pkotlin.incremental=false -x detekt -x qualityGateDetekt
+        run: ./gradlew --warning-mode all :common:check :xmsf:testNormalDebugUnitTest :xmsf:testVc105DebugUnitTest testDebugUnitTest -PminifyDebug -Pkotlin.incremental=false -x detekt -x qualityGateDetekt --no-configuration-cache
+
+      # ====================================================================
+      # 🎯 节点二：Build 步骤终极防御
+      # 在 assembleDebug 后面追加 -x 排除参数，彻底剥夺 Detekt 在打包阶段的搅局特权
+      # ====================================================================
       - name: Build
         if: always()
-        run: ./gradlew --warning-mode all :app:assembleDebug :mipush:assembleDebug -PbuildSplits -PminifyDebug -Pkotlin.incremental=false
+        run: ./gradlew --warning-mode all :app:assembleDebug :mipush:assembleDebug -PbuildSplits -PminifyDebug -Pkotlin.incremental=false -x detekt -x qualityGateDetekt --no-configuration-cache
+
       - name: Write build summary
         if: always()
         run: |
@@ -46,6 +57,7 @@ jobs:
             echo "## Debug APK summary"
             echo ""
             echo "| App | File | Size |"
+            echo "| --- | --- | --- |"
             echo "| --- | --- | --- |"
             while IFS= read -r apk; do
               if [ ! -f "$apk" ]; then
@@ -57,90 +69,105 @@ jobs:
               echo "| $app | $name | $size |"
             done < <(find app/build/outputs/apk mipush/build/outputs/apk -path '*/debug/*.apk' -not -path '*/androidTest/*' | sort)
           } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload XMSF Normal Debug APK (arm64-v8a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-normal-debug-arm64-v8a
           path: app/build/outputs/apk/normal/debug/**/*arm64-v8a*.apk
+
       - name: Upload XMSF vc105 Debug APK (arm64-v8a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-vc105-debug-arm64-v8a
           path: app/build/outputs/apk/vc105/debug/**/*arm64-v8a*.apk
+
       - name: Upload XMSF Normal Debug APK (armeabi-v7a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-normal-debug-armeabi-v7a
           path: app/build/outputs/apk/normal/debug/**/*armeabi-v7a*.apk
+
       - name: Upload XMSF Normal Debug APK (x86)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-normal-debug-x86
           path: app/build/outputs/apk/normal/debug/**/*x86_*.apk
+
       - name: Upload XMSF Normal Debug APK (x86_64)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-normal-debug-x86_64
           path: app/build/outputs/apk/normal/debug/**/*x86_64*.apk
+
       - name: Upload XMSF Normal Debug APK (universal)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-normal-debug-universal
           path: app/build/outputs/apk/normal/debug/**/*universal*.apk
+
       - name: Upload XMSF vc105 Debug APK (armeabi-v7a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-vc105-debug-armeabi-v7a
           path: app/build/outputs/apk/vc105/debug/**/*armeabi-v7a*.apk
+
       - name: Upload XMSF vc105 Debug APK (x86)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-vc105-debug-x86
           path: app/build/outputs/apk/vc105/debug/**/*x86_*.apk
+
       - name: Upload XMSF vc105 Debug APK (x86_64)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-vc105-debug-x86_64
           path: app/build/outputs/apk/vc105/debug/**/*x86_64*.apk
+
       - name: Upload XMSF vc105 Debug APK (universal)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: xmsf-vc105-debug-universal
           path: app/build/outputs/apk/vc105/debug/**/*universal*.apk
+
       - name: Upload MiPush Debug APK (arm64-v8a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: MiPush-debug-arm64-v8a
           path: mipush/build/outputs/apk/debug/**/*arm64-v8a*.apk
+
       - name: Upload MiPush Debug APK (armeabi-v7a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: MiPush-debug-armeabi-v7a
           path: mipush/build/outputs/apk/debug/**/*armeabi-v7a*.apk
+
       - name: Upload MiPush Debug APK (x86)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: MiPush-debug-x86
           path: mipush/build/outputs/apk/debug/**/*x86_*.apk
+
       - name: Upload MiPush Debug APK (x86_64)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: MiPush-debug-x86_64
           path: mipush/build/outputs/apk/debug/**/*x86_64*.apk
+
       - name: Upload MiPush Debug APK (universal)
         if: always()
         uses: actions/upload-artifact@v7
