@@ -3,6 +3,8 @@ pluginManagement {
     repositories {
         google()
         mavenCentral()
+        // 🎯 修复卡点：给插件管理层补全 Detekt 专属快照源
+        maven { url = java.net.URI("https://plugin-markers.detekt.dev/") }
         gradlePluginPortal()
         maven { url = uri("https://jitpack.io") }
     }
@@ -31,6 +33,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // 🎯 修复卡点：给全局项目依赖层补全 Detekt 专属快照源，彻底斩断 404 崩盘
+        maven { url = java.net.URI("https://plugin-markers.detekt.dev/") }
         maven { url = uri("https://jitpack.io") }
     }
 }
