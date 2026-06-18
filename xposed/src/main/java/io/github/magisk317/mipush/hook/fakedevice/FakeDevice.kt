@@ -26,11 +26,11 @@ object FakeDevice {
             HookPipelineId.PINDUODUO -> PinDuoDuo()
             HookPipelineId.MIPUSH_COMPONENT_VISIBILITY -> MiPushComponentVisibility()
             
-            // 🎯 核心解杀：用匿名对象原地拦截空转，彻底抹去对外部 FakeMiuiOnly 类的符号依赖
-            // 完美规避 Unresolved reference 报错，且不留下任何编译死角！
+            // 🎯 终极对齐：明确将返回值声明为 Boolean，并原地安全返回 true，完美契合接口规范！
             HookPipelineId.FAKE_MIUI_ONLY -> object : IFakeDevice {
-                override fun fake(lpparam: LoadParam) {
-                    // 空转放行
+                override fun fake(lpparam: LoadParam): Boolean {
+                    // 优雅空转，无伤放行
+                    return true
                 }
             }
             
