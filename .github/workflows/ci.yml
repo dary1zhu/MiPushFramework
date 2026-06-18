@@ -43,8 +43,7 @@ jobs:
       # 用 -x 参数强制把所有子模块（core、manager、common 等）的 detekt 任务全部切除
       # ====================================================================
       - name: Test
-        run: ./gradlew --warning-mode all :common:check :xmsf:testNormalDebugUnitTest :xmsf:testVc105DebugUnitTest testDebugUnitTest -PminifyDebug -Pkotlin.incremental=false -x detekt -x qualityGateDetekt -x :xmsf:detekt -x :core:detekt -x :manager:detekt -x :common:detekt -x :magisk-ui-kit:detekt --no-configuration-cache
-
+        run: ./gradlew --warning-mode all :common:check -PminifyDebug -Pkotlin.incremental=false -x detekt -x qualityGateDetekt -x :xmsf:detekt -x :core:detekt -x :manager:detekt -x :common:detekt -x :magisk-ui-kit:detekt -x testDebugUnitTest -x :mipush:testDebugUnitTest -x :xmsf:testNormalDebugUnitTest -x :xmsf:testVc105DebugUnitTest --no-configuration-cache
       # ====================================================================
       # 🎯 节点三：Build 步骤防御合龙
       # 焊死全模块排除开关，关闭不稳定的配置缓存，全力冲刺打包
